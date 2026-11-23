@@ -214,22 +214,6 @@ async function waitForIceGathering(peer, timeoutMs = 60000) {
     if (pc) closePeer(false);
     
     pc = new RTCPeerConnection(rtcConfig);
-
-    pc.onicegatheringstatechange = () => {
-      console.log('ICE gathering:', pc.iceGatheringState);
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      console.log('ICE connection:', pc.iceConnectionState);
-    };
-
-    pc.onicecandidate = event => {
-      if (event.candidate) {
-        console.log('ICE candidate:', event.candidate.type);
-      } else {
-        console.log('ICE gathering complete');
-      }
-    };
     pc.onconnectionstatechange = () => {
       if (!pc) return;
       if (pc.connectionState === 'connected') setStatus('Connected', true);
