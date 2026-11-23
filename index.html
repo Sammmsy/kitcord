@@ -85,10 +85,12 @@
 
     <section class="card">
       <h2><span class="step">2</span>Join / complete pairing</h2>
-      <p class="sub">Scan the other device's QR code, or paste its connection code.</p>
+      <p class="sub">Use your camera, choose a QR screenshot/image, or paste the connection code.</p>
       <div class="actions">
-        <button id="scanBtn">Scan QR code</button>
+        <button id="scanBtn">Use camera</button>
+        <button id="uploadQrBtn">Scan QR image</button>
         <button id="stopScan" class="hidden">Stop camera</button>
+        <input id="qrImageInput" type="file" accept="image/*" class="hidden">
       </div>
       <video id="scanner" class="hidden" playsinline muted></video>
       <div class="field">
@@ -273,50 +275,130 @@
     catch { toast('Clipboard access unavailable. Paste into the box manually.'); remoteCode.focus(); }
   }
   async function startScan() {
-    if (!navigator.mediaDevices?.getUserMedia) { toast('Camera access requires HTTPS and a supported browser.'); return; }
-    if (!('BarcodeDetector' in window) && typeof jsQR === 'undefined') { toast('QR scanner library is unavailable. Paste the code instead.'); return; }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast('Camera access requires HTTPS and a supported browser. Use Scan QR image instead.');
+      return;
+    }
+    if (typeof jsQR === 'undefined' && !('BarcodeDetector' in window)) {
+      toast('QR scanner library did not load. Use copy/paste instead.');
+      return;
+    }
     try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
-      scanner.srcObject = cameraStream; scanner.classList.remove('hidden');
-      $('scanBtn').classList.add('hidden'); $('stopScan').classList.remove('hidden');
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      scanner.srcObject = cameraStream;
+      scanner.classList.remove('hidden');
+      $('scanBtn').classList.add('hidden');
+      $('uploadQrBtn').classList.add('hidden');
+      $('stopScan').classList.remove('hidden');
       await scanner.play();
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       let detector = null;
       if ('BarcodeDetector' in window) {
-        try { detector = new BarcodeDetector({formats:['qr_code']}); } catch {}
+        try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (_) {}
       }
-      const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', {willReadFrequently:true});
+      let busy = false;
       const tick = async () => {
         if (!cameraStream) return;
-        if (scanner.readyState >= 2 && scanner.videoWidth) {
-          canvas.width = scanner.videoWidth; canvas.height = scanner.videoHeight;
-          ctx.drawImage(scanner,0,0,canvas.width,canvas.height);
+        if (!busy && scanner.readyState >= 2 && scanner.videoWidth > 0) {
+          busy = true;
           try {
+            canvas.width = scanner.videoWidth;
+            canvas.height = scanner.videoHeight;
+            ctx.drawImage(scanner, 0, 0, canvas.width, canvas.height);
             let value = null;
+
             if (detector) {
-              const codes = await detector.detect(canvas);
-              if (codes.length) value = codes[0].rawValue;
-            } else {
-              const frame = ctx.getImageData(0,0,canvas.width,canvas.height);
-              const code = jsQR(frame.data,frame.width,frame.height,{inversionAttempts:'attemptBoth'});
-              if (code) value = code.data;
+              try {
+                const found = await detector.detect(canvas);
+                if (found && found.length) value = found[0].rawValue;
+              } catch (_) { detector = null; }
+            }
+            // Always fall back to jsQR when the native detector is absent or finds nothing.
+            if (!value && typeof jsQR !== 'undefined') {
+              const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const found = jsQR(frame.data, frame.width, frame.height, {
+                inversionAttempts: 'attemptBoth'
+              });
+              if (found) value = found.data;
             }
             if (value) {
-              remoteCode.value = value; stopScan(); toast('QR code scanned. Tap Process code.');
+              remoteCode.value = value;
+              stopScan();
+              toast('QR code scanned. Tap Process code.');
               return;
             }
-          } catch {}
+          } catch (_) {
+            // Keep scanning; transient camera frame errors are harmless.
+          } finally {
+            busy = false;
+          }
         }
-        scanFrame = requestAnimationFrame(tick);
+        if (cameraStream) scanFrame = requestAnimationFrame(tick);
       };
       tick();
-    } catch (e) { stopScan(); toast('Could not access camera: ' + e.message); }
+    } catch (e) {
+      stopScan();
+      toast('Could not access camera: ' + (e.message || 'permission denied'));
+    }
+  }
+
+  async function scanQrImage(file) {
+    if (!file) return;
+    if (typeof jsQR === 'undefined') {
+      toast('QR image decoder did not load. Use the camera or copy/paste instead.');
+      return;
+    }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close?.();
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let decoded = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'attemptBoth'
+      });
+
+      // Retry with a scaled image for very large screenshots or photos.
+      if (!decoded && Math.max(canvas.width, canvas.height) > 1800) {
+        const scale = 1800 / Math.max(canvas.width, canvas.height);
+        const scaled = document.createElement('canvas');
+        scaled.width = Math.round(canvas.width * scale);
+        scaled.height = Math.round(canvas.height * scale);
+        const sctx = scaled.getContext('2d', { willReadFrequently: true });
+        sctx.drawImage(canvas, 0, 0, scaled.width, scaled.height);
+        const data = sctx.getImageData(0, 0, scaled.width, scaled.height);
+        decoded = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' });
+      }
+
+      if (!decoded) {
+        toast('No readable QR code found in that image. Try a sharper, uncropped image.');
+        return;
+      }
+      remoteCode.value = decoded.data;
+      toast('QR image scanned. Tap Process code.');
+    } catch (e) {
+      toast('Could not read that image: ' + (e.message || 'unsupported image'));
+    } finally {
+      $('qrImageInput').value = '';
+    }
   }
   function stopScan() {
     if (scanFrame) cancelAnimationFrame(scanFrame);
     scanFrame = null;
     if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null; scanner.srcObject = null; scanner.classList.add('hidden');
-    $('scanBtn').classList.remove('hidden'); $('stopScan').classList.add('hidden');
+    $('scanBtn').classList.remove('hidden');
+    $('uploadQrBtn').classList.remove('hidden');
+    $('stopScan').classList.add('hidden');
   }
   function closePeer(resetUi = true) {
     if (channel) { channel.onopen = channel.onclose = channel.onmessage = null; try { channel.close(); } catch {} }
@@ -334,6 +416,8 @@
   $('processRemote').addEventListener('click', processRemote);
   $('pasteRemote').addEventListener('click', pasteRemote);
   $('scanBtn').addEventListener('click', startScan);
+  $('uploadQrBtn').addEventListener('click', () => $('qrImageInput').click());
+  $('qrImageInput').addEventListener('change', event => scanQrImage(event.target.files?.[0]));
   $('stopScan').addEventListener('click', stopScan);
   $('disconnect').addEventListener('click', () => { stopScan(); closePeer(); toast('Disconnected.'); });
   $('sendForm').addEventListener('submit', event => {
