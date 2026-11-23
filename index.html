@@ -212,8 +212,10 @@ async function waitForIceGathering(peer, timeoutMs = 60000) {
 }
   function setupPeer() {
     if (pc) closePeer(false);
+    
+    pc = new RTCPeerConnection(rtcConfig);
 
-        pc.onicegatheringstatechange = () => {
+    pc.onicegatheringstatechange = () => {
       console.log('ICE gathering:', pc.iceGatheringState);
     };
 
@@ -228,8 +230,6 @@ async function waitForIceGathering(peer, timeoutMs = 60000) {
         console.log('ICE gathering complete');
       }
     };
-    
-    pc = new RTCPeerConnection(rtcConfig);
     pc.onconnectionstatechange = () => {
       if (!pc) return;
       if (pc.connectionState === 'connected') setStatus('Connected', true);
