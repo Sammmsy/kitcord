@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f8fa">
+<title>Peer — Private P2P Chat</title>
+<style>
+  :root { color-scheme: light; --bg:#f7f8fa; --panel:#fff; --ink:#17202b; --muted:#687586; --line:#e4e8ee; --accent:#315efb; --accent-soft:#edf1ff; --green:#14845b; --red:#c43c48; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { width:min(940px, calc(100% - 32px)); margin:40px auto 64px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:26px; }
+  .brand { display:flex; align-items:center; gap:11px; font-weight:700; font-size:19px; letter-spacing:-.03em; }
+  .logo { display:grid; place-items:center; width:36px; height:36px; border-radius:11px; background:var(--ink); color:white; font-size:17px; }
+  .status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#aab3bf; }
+  .dot.connected { background:var(--green); box-shadow:0 0 0 4px #14845b18; }
+  h1 { font-size:clamp(28px,5vw,40px); letter-spacing:-.045em; line-height:1.1; margin:0 0 9px; }
+  .lead { color:var(--muted); margin:0 0 26px; max-width:660px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px; min-width:0; }
+  .card h2 { font-size:16px; margin:0 0 5px; letter-spacing:-.02em; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 17px; }
+  .step { display:inline-grid; place-items:center; width:23px; height:23px; border-radius:7px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:700; margin-right:7px; }
+  button, textarea, input { font:inherit; }
+  button { border:1px solid var(--line); background:white; color:var(--ink); border-radius:9px; padding:9px 13px; cursor:pointer; font-weight:600; font-size:13px; }
+  button:hover { border-color:#b8c3d2; background:#fafbfc; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:white; }
+  button.primary:hover { background:#244ee0; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; }
+  textarea { width:100%; min-height:106px; resize:vertical; border:1px solid var(--line); border-radius:9px; padding:10px 11px; color:var(--ink); background:#fcfcfd; font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; }
+  textarea:focus, input:focus { outline:2px solid #315efb33; border-color:var(--accent); }
+  .field { margin-top:13px; }
+  .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600; }
+  .qrbox { min-height:180px; display:grid; place-items:center; border:1px dashed #cfd6e0; border-radius:12px; background:#fbfcfe; padding:12px; margin:12px 0; text-align:center; }
+  .qrbox canvas,.qrbox img { max-width:100%; height:auto; }
+  .placeholder { color:var(--muted); font-size:12px; }
+  .chat { margin-top:16px; }
+  .chat-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .chat-head h2 { margin:0; font-size:17px; }
+  #messages { height:270px; overflow:auto; border:1px solid var(--line); border-radius:12px; background:#fbfcfe; padding:12px; display:flex; flex-direction:column; gap:9px; }
+  .empty { color:var(--muted); font-size:13px; margin:auto; text-align:center; }
+  .msg { max-width:82%; padding:9px 11px; border-radius:12px; background:#edf0f5; overflow-wrap:anywhere; white-space:pre-wrap; font-size:14px; }
+  .msg.mine { align-self:flex-end; background:var(--accent); color:white; border-bottom-right-radius:4px; }
+  .msg.theirs { align-self:flex-start; border-bottom-left-radius:4px; }
+  .msg small { display:block; opacity:.68; font-size:10px; margin-top:3px; }
+  .sendrow { display:flex; gap:8px; margin-top:9px; }
+  .sendrow input { flex:1; min-width:0; border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:white; }
+  .notice { margin-top:16px; border:1px solid #e7eaf0; border-radius:12px; padding:12px 14px; color:var(--muted); font-size:12px; background:#fff; }
+  .notice strong { color:var(--ink); }
+  .hidden { display:none !important; }
+  #scanner { width:100%; max-height:260px; background:#111; border-radius:10px; margin-top:10px; }
+  .small-note { color:var(--muted); font-size:11px; margin-top:7px; }
+  .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#17202b; color:#fff; border-radius:9px; padding:9px 14px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; }
+  .toast.show { opacity:1; }
+  @media(max-width:700px) { .wrap{margin-top:24px}.grid{grid-template-columns:1fr}.card{padding:16px}header{margin-bottom:22px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo">↗</div> peer</div>
+    <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Not connected</span></div>
+  </header>
+  <h1>Chat, directly.</h1>
+  <p class="lead">A private, peer-to-peer chat connection. Pair devices by scanning a QR code or copying a short connection message. No account or signaling server required.</p>
+
+  <div class="grid">
+    <section class="card">
+      <h2><span class="step">1</span>Start a connection</h2>
+      <p class="sub">On the first device, create an offer. On the second, scan or paste it below.</p>
+      <div class="actions">
+        <button class="primary" id="createOffer">Create offer</button>
+        <button id="copyLocal" disabled>Copy my code</button>
+      </div>
+      <div class="qrbox" id="localQr"><span class="placeholder">Your connection QR code appears here</span></div>
+      <div class="field">
+        <label for="localCode">YOUR CONNECTION CODE</label>
+        <textarea id="localCode" spellcheck="false" placeholder="Create an offer or answer to generate a code…" readonly></textarea>
+      </div>
+      <div class="small-note" id="localHint">Create an offer to begin pairing this device.</div>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">2</span>Join / complete pairing</h2>
+      <p class="sub">Scan the other device's QR code, or paste its connection code.</p>
+      <div class="actions">
+        <button id="scanBtn">Scan QR code</button>
+        <button id="stopScan" class="hidden">Stop camera</button>
+      </div>
+      <video id="scanner" class="hidden" playsinline muted></video>
+      <div class="field">
+        <label for="remoteCode">OTHER DEVICE'S CODE</label>
+        <textarea id="remoteCode" spellcheck="false" placeholder="Paste the other device's offer or answer here…"></textarea>
+      </div>
+      <div class="actions" style="margin-top:9px">
+        <button class="primary" id="processRemote">Process code</button>
+        <button id="pasteRemote">Paste</button>
+      </div>
+      <p class="small-note" id="remoteHint">If you received an offer, this device will create an answer. If you received an answer, it will complete your offer.</p>
+    </section>
+  </div>
+
+  <section class="card chat">
+    <div class="chat-head"><h2>Messages</h2><button id="disconnect" disabled>Disconnect</button></div>
+    <div id="messages"><div class="empty">Your messages will appear here once both devices are connected.</div></div>
+    <form class="sendrow" id="sendForm">
+      <input id="messageInput" autocomplete="off" placeholder="Write a message…" disabled>
+      <button class="primary" id="sendBtn" disabled>Send</button>
+    </form>
+  </section>
+
+  <div class="notice"><strong>Privacy & connectivity.</strong> Messages travel directly between devices over an encrypted WebRTC data channel. QR/copy-paste is the signaling method; this page does not upload your offer, answer, or messages. A public STUN service is used to help discover network routes. Some restrictive networks require a TURN relay, which this server-free demo does not provide.</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- QR rendering and fallback QR decoding libraries; no application backend is used. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const createOfferBtn = $('createOffer'), copyLocalBtn = $('copyLocal');
+  const localCode = $('localCode'), remoteCode = $('remoteCode');
+  const localQr = $('localQr'), localHint = $('localHint'), remoteHint = $('remoteHint');
+  const statusText = $('statusText'), statusDot = $('statusDot');
+  const messages = $('messages'), messageInput = $('messageInput');
+  const sendBtn = $('sendBtn'), disconnectBtn = $('disconnect');
+  const scanner = $('scanner');
+  let pc = null, channel = null, cameraStream = null, scanFrame = null;
+  let localDescriptionReady = false;
+
+  const rtcConfig = {
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  };
+
+  function toast(text) {
+    const el = $('toast'); el.textContent = text; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2400);
+  }
+  function setStatus(text, connected = false) {
+    statusText.textContent = text;
+    statusDot.classList.toggle('connected', connected);
+    messageInput.disabled = !connected;
+    sendBtn.disabled = !connected;
+    disconnectBtn.disabled = !pc;
+  }
+  function addMessage(text, mine) {
+    const empty = messages.querySelector('.empty'); if (empty) empty.remove();
+    const bubble = document.createElement('div');
+    bubble.className = 'msg ' + (mine ? 'mine' : 'theirs');
+    bubble.append(document.createTextNode(text));
+    const time = document.createElement('small');
+    time.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    bubble.append(time); messages.append(bubble); messages.scrollTop = messages.scrollHeight;
+  }
+  function clearQr() { localQr.replaceChildren(Object.assign(document.createElement('span'), {className:'placeholder', textContent:'Your connection QR code appears here'})); }
+  function encodeDescription(desc) {
+    return JSON.stringify({ app:'peer-chat', version:1, type:desc.type, sdp:desc.sdp });
+  }
+  function decodeDescription(raw) {
+    let data;
+    try { data = JSON.parse(raw.trim()); } catch { throw new Error('That does not look like a valid connection code.'); }
+    if (data.app !== 'peer-chat' || data.version !== 1 || !['offer','answer'].includes(data.type) || typeof data.sdp !== 'string') {
+      throw new Error('Unsupported or invalid connection code.');
+    }
+    return {type:data.type, sdp:data.sdp};
+  }
+  function renderLocalCode(desc) {
+    const code = encodeDescription(desc);
+    localCode.value = code;
+    copyLocalBtn.disabled = false;
+    localQr.replaceChildren();
+    if (typeof QRCode === 'undefined') {
+      localQr.textContent = 'QR library did not load. Use Copy my code instead.';
+    } else {
+      try {
+        new QRCode(localQr, {text:code, width:240, height:240, correctLevel:QRCode.CorrectLevel.L});
+      } catch (e) {
+        localQr.textContent = 'This connection code is too large for one QR code. Use Copy my code instead.';
+      }
+    }
+  }
+  function waitForIceGathering(peer, timeoutMs = 18000) {
+    if (peer.iceGatheringState === 'complete') return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => { cleanup(); reject(new Error('ICE gathering timed out. Try again or use another network.')); }, timeoutMs);
+      function check() {
+        if (peer.iceGatheringState === 'complete') { cleanup(); resolve(); }
+      }
+      function cleanup() { clearTimeout(timeout); peer.removeEventListener('icegatheringstatechange', check); }
+      peer.addEventListener('icegatheringstatechange', check);
+      check();
+    });
+  }
+  function setupPeer() {
+    if (pc) closePeer(false);
+    pc = new RTCPeerConnection(rtcConfig);
+    pc.onconnectionstatechange = () => {
+      if (!pc) return;
+      if (pc.connectionState === 'connected') setStatus('Connected', true);
+      else if (pc.connectionState === 'connecting') setStatus('Connecting…');
+      else if (pc.connectionState === 'failed') { setStatus('Connection failed'); toast('Connection failed. A TURN relay may be needed on this network.'); }
+      else if (pc.connectionState === 'disconnected') setStatus('Disconnected');
+      else if (pc.connectionState === 'closed') setStatus('Not connected');
+    };
+    pc.ondatachannel = event => attachChannel(event.channel);
+    return pc;
+  }
+  function attachChannel(ch) {
+    channel = ch;
+    channel.onopen = () => { setStatus('Connected', true); toast('Peer connection established.'); };
+    channel.onclose = () => { setStatus('Channel closed'); };
+    channel.onerror = () => toast('Data channel error.');
+    channel.onmessage = event => {
+      try {
+        const packet = JSON.parse(event.data);
+        if (packet.type === 'chat' && typeof packet.text === 'string') addMessage(packet.text, false);
+      } catch { /* Ignore malformed packets. */ }
+    };
+  }
+  async function createOffer() {
+    try {
+      createOfferBtn.disabled = true;
+      const peer = setupPeer();
+      attachChannel(peer.createDataChannel('chat', {ordered:true}));
+      setStatus('Preparing offer…');
+      await peer.setLocalDescription(await peer.createOffer());
+      await waitForIceGathering(peer);
+      renderLocalCode(peer.localDescription);
+      localHint.textContent = 'Send this offer QR/code to the other device. Keep this page open.';
+      setStatus('Offer ready — waiting for answer');
+      toast('Offer created. Share the QR code or copy the code.');
+    } catch (e) { toast(e.message || 'Could not create offer.'); setStatus('Not connected'); }
+    finally { createOfferBtn.disabled = false; }
+  }
+  async function processRemote() {
+    const raw = remoteCode.value.trim();
+    if (!raw) { toast('Scan or paste a connection code first.'); return; }
+    try {
+      const desc = decodeDescription(raw);
+      if (desc.type === 'offer') {
+        const peer = setupPeer();
+        setStatus('Preparing answer…');
+        await peer.setRemoteDescription(desc);
+        await peer.setLocalDescription(await peer.createAnswer());
+        await waitForIceGathering(peer);
+        renderLocalCode(peer.localDescription);
+        localHint.textContent = 'This is your answer. Send its QR/code back to the device that created the offer.';
+        remoteHint.textContent = 'Answer created. The other device must scan or paste your answer to finish pairing.';
+        setStatus('Answer ready — send it back');
+        toast('Answer created. Return it to the first device.');
+      } else {
+        if (!pc || pc.signalingState !== 'have-local-offer') {
+          throw new Error('Create an offer on this device before processing an answer.');
+        }
+        await pc.setRemoteDescription(desc);
+        remoteHint.textContent = 'Answer accepted. Waiting for the peer connection…';
+        setStatus('Answer accepted — connecting…');
+        toast('Answer accepted.');
+      }
+    } catch (e) { toast(e.message || 'Could not process connection code.'); }
+  }
+  async function copyLocal() {
+    if (!localCode.value) return;
+    try { await navigator.clipboard.writeText(localCode.value); toast('Connection code copied.'); }
+    catch { localCode.focus(); localCode.select(); toast('Select and copy the connection code.'); }
+  }
+  async function pasteRemote() {
+    try { remoteCode.value = await navigator.clipboard.readText(); toast('Pasted from clipboard.'); }
+    catch { toast('Clipboard access unavailable. Paste into the box manually.'); remoteCode.focus(); }
+  }
+  async function startScan() {
+    if (!navigator.mediaDevices?.getUserMedia) { toast('Camera access requires HTTPS and a supported browser.'); return; }
+    if (!('BarcodeDetector' in window) && typeof jsQR === 'undefined') { toast('QR scanner library is unavailable. Paste the code instead.'); return; }
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
+      scanner.srcObject = cameraStream; scanner.classList.remove('hidden');
+      $('scanBtn').classList.add('hidden'); $('stopScan').classList.remove('hidden');
+      await scanner.play();
+      let detector = null;
+      if ('BarcodeDetector' in window) {
+        try { detector = new BarcodeDetector({formats:['qr_code']}); } catch {}
+      }
+      const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', {willReadFrequently:true});
+      const tick = async () => {
+        if (!cameraStream) return;
+        if (scanner.readyState >= 2 && scanner.videoWidth) {
+          canvas.width = scanner.videoWidth; canvas.height = scanner.videoHeight;
+          ctx.drawImage(scanner,0,0,canvas.width,canvas.height);
+          try {
+            let value = null;
+            if (detector) {
+              const codes = await detector.detect(canvas);
+              if (codes.length) value = codes[0].rawValue;
+            } else {
+              const frame = ctx.getImageData(0,0,canvas.width,canvas.height);
+              const code = jsQR(frame.data,frame.width,frame.height,{inversionAttempts:'attemptBoth'});
+              if (code) value = code.data;
+            }
+            if (value) {
+              remoteCode.value = value; stopScan(); toast('QR code scanned. Tap Process code.');
+              return;
+            }
+          } catch {}
+        }
+        scanFrame = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) { stopScan(); toast('Could not access camera: ' + e.message); }
+  }
+  function stopScan() {
+    if (scanFrame) cancelAnimationFrame(scanFrame);
+    scanFrame = null;
+    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null; scanner.srcObject = null; scanner.classList.add('hidden');
+    $('scanBtn').classList.remove('hidden'); $('stopScan').classList.add('hidden');
+  }
+  function closePeer(resetUi = true) {
+    if (channel) { channel.onopen = channel.onclose = channel.onmessage = null; try { channel.close(); } catch {} }
+    if (pc) { pc.onconnectionstatechange = pc.ondatachannel = null; try { pc.close(); } catch {} }
+    channel = null; pc = null; localDescriptionReady = false;
+    if (resetUi) {
+      localCode.value = ''; copyLocalBtn.disabled = true; clearQr();
+      setStatus('Not connected');
+      messages.replaceChildren(Object.assign(document.createElement('div'), {className:'empty', textContent:'Your messages will appear here once both devices are connected.'}));
+    }
+  }
+
+  $('createOffer').addEventListener('click', createOffer);
+  $('copyLocal').addEventListener('click', copyLocal);
+  $('processRemote').addEventListener('click', processRemote);
+  $('pasteRemote').addEventListener('click', pasteRemote);
+  $('scanBtn').addEventListener('click', startScan);
+  $('stopScan').addEventListener('click', stopScan);
+  $('disconnect').addEventListener('click', () => { stopScan(); closePeer(); toast('Disconnected.'); });
+  $('sendForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text || !channel || channel.readyState !== 'open') return;
+    try {
+      channel.send(JSON.stringify({type:'chat',text}));
+      addMessage(text,true); messageInput.value=''; messageInput.focus();
+    } catch { toast('Message could not be sent.'); }
+  });
+  window.addEventListener('beforeunload', () => { stopScan(); closePeer(false); });
+})();
+</script>
+</body>
+</html>
