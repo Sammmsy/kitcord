@@ -185,20 +185,49 @@
       }
     }
   }
-  function waitForIceGathering(peer, timeoutMs = 18000) {
-    if (peer.iceGatheringState === 'complete') return Promise.resolve();
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => { cleanup(); reject(new Error('ICE gathering timed out. Try again or use another network.')); }, timeoutMs);
-      function check() {
-        if (peer.iceGatheringState === 'complete') { cleanup(); resolve(); }
+async function waitForIceGathering(peer, timeoutMs = 60000) {
+  if (peer.iceGatheringState === 'complete') return;
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('ICE gathering timed out.'));
+    }, timeoutMs);
+
+    function check() {
+      if (peer.iceGatheringState === 'complete') {
+        cleanup();
+        resolve();
       }
-      function cleanup() { clearTimeout(timeout); peer.removeEventListener('icegatheringstatechange', check); }
-      peer.addEventListener('icegatheringstatechange', check);
-      check();
-    });
-  }
+    }
+
+    function cleanup() {
+      clearTimeout(timeout);
+      peer.removeEventListener('icegatheringstatechange', check);
+    }
+
+    peer.addEventListener('icegatheringstatechange', check);
+    check();
+  });
+}
   function setupPeer() {
+        pc.onicegatheringstatechange = () => {
+      console.log('ICE gathering:', pc.iceGatheringState);
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE connection:', pc.iceConnectionState);
+    };
+
+    pc.onicecandidate = event => {
+      if (event.candidate) {
+        console.log('ICE candidate:', event.candidate.type);
+      } else {
+        console.log('ICE gathering complete');
+      }
+    };
     if (pc) closePeer(false);
+    
     pc = new RTCPeerConnection(rtcConfig);
     pc.onconnectionstatechange = () => {
       if (!pc) return;
