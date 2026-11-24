@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#315f52">
+  <title>Mensa – Sitzplatzplan</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" id="homeLink" aria-label="Zur Mensa-Übersicht">
+      <span class="brand-mark">M</span>
+      <span>Mensa-Plan</span>
+    </a>
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a class="nav-link active" href="#" id="overviewNav">Übersicht</a>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <section id="overviewView">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">CAMPUS · SITZPLATZPLAN</p>
+          <h1>Mensa-Übersicht</h1>
+          <p class="intro">Wähle einen Bereich aus, um den zugehörigen Sitzplan zu öffnen.</p>
+        </div>
+        <div class="heading-note"><span class="status-dot"></span> Bereiche interaktiv</div>
+      </div>
+
+      <section class="planner-card map-card" aria-label="Interaktive Mensa-Karte">
+        <div class="map-legend">
+          <span><i class="legend-swatch map-free"></i> Bereich auswählen</span>
+          <span class="map-help">Klicke auf eine farbige Fläche</span>
+        </div>
+        <div class="map-viewport">
+          <div class="map-stage">
+            <img src="assets/mensa-skizze.png" alt="Skizze des Mensa-Gebäudes mit sechs Bereichen">
+            <svg class="map-overlay" viewBox="0 0 948 704" role="group" aria-label="Mensa-Bereiche">
+              <polygon class="area-hit" data-area="halle1" points="12,20 275,20 275,245 12,245">
+                <title>Halle 1 öffnen</title>
+              </polygon>
+              <polygon class="area-hit" data-area="koeri" points="12,248 275,248 275,465 12,465">
+                <title>[koeri]Werk öffnen</title>
+              </polygon>
+              <polygon class="area-hit" data-area="halle2" points="278,20 646,20 646,242 527,242 527,193 278,193">
+                <title>Halle 2 öffnen</title>
+              </polygon>
+              <polygon class="area-hit" data-area="pizza" points="650,20 930,20 930,230 815,230 815,244 666,244 666,242 650,242">
+                <title>[pizza]Werk öffnen</title>
+              </polygon>
+              <polygon class="area-hit" data-area="aussen" points="280,194 526,194 526,472 280,472">
+                <title>Außenbereich öffnen</title>
+              </polygon>
+              <polygon class="area-hit" data-area="cafeteria" points="538,245 664,245 664,280 752,280 752,343 800,343 800,280 916,280 916,646 606,646 606,561 538,561">
+                <title>Cafeteria öffnen</title>
+              </polygon>
+            </svg>
+          </div>
+        </div>
+        <p class="mobile-hint">Auf kleinen Bildschirmen kannst du die Karte horizontal verschieben.</p>
+      </section>
+    </section>
+
+    <section id="seatsView" hidden>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">CAMPUS · SITZPLATZPLAN</p>
+          <h1 id="areaTitle">Sitzplan</h1>
+          <p class="intro">Klicke auf einen Sitzplatz, um ihn zu markieren oder die Markierung zu entfernen.</p>
+        </div>
+        <button class="button button-secondary back-button" id="backButton" type="button">← Zur Übersicht</button>
+      </div>
+
+      <section class="planner-card seat-card">
+        <div class="seat-toolbar">
+          <div class="legend">
+            <span><i class="legend-swatch free"></i> Frei</span>
+            <span><i class="legend-swatch selected"></i> Ausgewählt</span>
+            <span><i class="legend-swatch occupied"></i> Belegt</span>
+          </div>
+          <div class="seat-summary" id="seatSummary" aria-live="polite">0 Plätze ausgewählt</div>
+        </div>
+        <div class="seat-plan" id="seatPlan" aria-label="Sitzplätze"></div>
+        <div class="seat-actions">
+          <p class="seat-note">Deine Auswahl wird lokal in diesem Browser gespeichert.</p>
+          <button class="button button-secondary" id="clearButton" type="button">Auswahl zurücksetzen</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <footer class="page-footer">
+    <span>Mensa-Sitzplatzplan</span>
+    <span>Demo · Auswahl wird auf diesem Gerät gespeichert</span>
+  </footer>
+</body>
+</html>

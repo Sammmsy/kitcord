@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="KIT campus map for finding buildings and facilities.">
-  <title>Campus Map | Weekly Planner</title>
+  <meta name="description" content="Pick your seat in the KIT Mensa.">
+  <title>Mensa | Weekly Planner</title>
   <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../css/mensa-planner.css">
+  <script type="module" src="../js/mensa-planner.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -15,17 +17,61 @@
     </a>
     <nav class="main-nav" aria-label="Main navigation">
       <a class="nav-link" href="../index.html">Timetable</a>
-      <a class="nav-link" href="campus-map.html" aria-current="page">Campus</a>
-      <a class="nav-link" href="mensa-planner.html" aria-current="page">Mensa</a>
+      <a class="nav-link" href="campus-map.html">Campus</a>
+      <a class="nav-link active" href="mensa-planner.html" aria-current="page">Mensa</a>
     </nav>
   </header>
 
   <main class="page-shell">
-    <section class="page-heading">
-      <div>
-        <p class="eyebrow">Mensa</p>
+    <section id="mensa-overview">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">FIND YOUR FRIENDS IN THE MENSA</p>
+          <h1>Mensa</h1>
+          <p class="intro">Select an area to open its seat plan.</p>
+        </div>
+        <div class="heading-note"><span class="status-dot"></span> Click an area</div>
       </div>
+      <section class="planner-card mensa-card" aria-label="Mensa overview map">
+        <div class="mensa-stage"><div id="mensa-map"></div></div>
+        <p id="mensa-saved" class="mensa-saved" aria-live="polite"></p>
+      </section>
+    </section>
+
+    <section id="mensa-room" hidden>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">SEAT PLAN</p>
+          <h1 id="mensa-room-title">Room</h1>
+          <p class="intro">Select a seat. Select it again to clear it.</p>
+        </div>
+        <button id="mensa-back" class="button button-secondary" type="button">← Back to overview</button>
+      </div>
+      <section class="planner-card mensa-card" aria-label="Seat plan">
+        <div class="mensa-toolbar">
+          <div class="legend">
+            <span><i class="legend-swatch seat-free"></i> Free</span>
+            <span><i class="legend-swatch seat-selected"></i> Your seat</span>
+            <span><i class="legend-swatch seat-occupied"></i> Occupied</span>
+          </div>
+          <div class="mensa-controls">
+            <div class="mensa-zoom" role="group" aria-label="Zoom">
+              <button id="mensa-zoom-out" class="button button-secondary" type="button" aria-label="Zoom out">−</button>
+              <button id="mensa-zoom-fit" class="button button-secondary" type="button">Fit</button>
+              <button id="mensa-zoom-in" class="button button-secondary" type="button" aria-label="Zoom in">+</button>
+            </div>
+            <div id="mensa-summary" class="mensa-summary" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="mensa-stage"><div id="mensa-plan"></div></div>
+        <div class="mensa-actions">
+          <p>Your seat is saved in this browser on this device.</p>
+          <button id="mensa-clear" class="button button-secondary" type="button">Clear seat</button>
+        </div>
+      </section>
     </section>
   </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

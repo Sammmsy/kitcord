@@ -1,0 +1,58 @@
+/* Mensa page styles. Uses the shared tokens from ../styles.css. */
+.mensa-card { padding: 18px; }
+.mensa-stage { background: var(--canvas); border-radius: 12px; padding: 10px; overflow: auto; -webkit-overflow-scrolling: touch; }
+.mensa-svg { display: block; width: 100%; height: auto; max-height: 76vh; }
+/* Room plans are sized by JS (fit to screen, min. size on phones, zoom); the stage scrolls. */
+.mensa-svg-room { max-width: none; max-height: none; margin-inline: auto; }
+.mensa-saved { margin: 14px 2px 0; color: var(--muted); font-size: 12px; }
+
+/* Overview map */
+.mensa-area { cursor: pointer; outline: none; }
+.mensa-area-shape { stroke: #fff; stroke-width: 3; transition: filter .15s; }
+.mensa-area:hover .mensa-area-shape,
+.mensa-area:focus-visible .mensa-area-shape { filter: brightness(1.1); }
+.mensa-area:focus-visible .mensa-area-shape { stroke: var(--accent); stroke-width: 6; }
+.mensa-area.is-empty .mensa-area-shape { opacity: .8; }
+.mensa-area-label {
+  fill: #fff; font-size: 28px; font-weight: 800; pointer-events: none;
+  paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 5px; stroke-linejoin: round;
+}
+.mensa-area-label.is-dark { fill: var(--ink); stroke: none; }
+.mensa-pin circle { fill: var(--accent); stroke: #fff; stroke-width: 3; }
+.mensa-pin text { fill: #fff; font-size: 16px; font-weight: 800; }
+
+/* Seat plan */
+.mensa-wall { stroke: var(--ink); stroke-width: 2; }
+.mensa-block { fill: #ebeef0; stroke: var(--ink); stroke-width: 2; }
+.mensa-block-label { fill: var(--ink); font-size: 15px; }
+.mensa-block-label.is-big { font-size: 24px; }
+.mensa-table-body { fill: #fbe9bd; stroke: var(--ink); stroke-width: 1.5; }
+.mensa-table-label { font-size: 17px; font-weight: 800; pointer-events: none; }
+.mensa-seat { fill: #f2c94c; stroke: var(--ink); stroke-width: 1; cursor: pointer; outline: none; transition: fill .12s; }
+.mensa-seat:hover, .mensa-seat:focus-visible { fill: #ffd75e; stroke-width: 2.2; }
+.mensa-seat:focus-visible { stroke: var(--accent); }
+.mensa-seat.is-selected { fill: var(--accent); stroke: var(--accent-dark); }
+.mensa-seat.is-occupied { fill: #c9ced3; cursor: not-allowed; }
+.mensa-empty { padding: 56px 16px; text-align: center; color: var(--muted); }
+
+/* Toolbar */
+.mensa-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.mensa-toolbar .legend { margin: 0; }
+.mensa-summary { padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--accent-soft); color: var(--accent-dark); font-size: 12px; font-weight: 700; }
+.mensa-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.mensa-actions p { margin: 0; color: var(--muted); font-size: 12px; }
+.button:disabled { opacity: .45; cursor: not-allowed; }
+.legend-swatch.seat-free { background: #f2c94c; border: 1px solid var(--ink); }
+.legend-swatch.seat-selected { background: var(--accent); }
+.legend-swatch.seat-occupied { background: #c9ced3; }
+.legend-swatch.map-area { background: #ff8a4c; }
+
+.mensa-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.mensa-zoom { display: inline-flex; gap: 4px; }
+.mensa-zoom .button { min-width: 38px; padding: 8px 10px; }
+
+@media (max-width: 600px) {
+  .mensa-stage { padding: 6px; }
+  .mensa-area-label { font-size: 38px; stroke-width: 7px; }
+  .mensa-toolbar, .mensa-actions { flex-direction: column; align-items: flex-start; }
+}
