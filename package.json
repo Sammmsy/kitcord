@@ -1,0 +1,23 @@
+{
+  "name": "kitcord",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sammmsy/kitcord.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sammmsy/kitcord/issues"
+  },
+  "homepage": "https://github.com/Sammmsy/kitcord#readme",
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "leaflet.locatecontrol": "^0.91.0"
+  }
+}

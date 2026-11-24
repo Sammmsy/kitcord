@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="KIT campus map for finding buildings and facilities.">
+  <title>Campus Map | Weekly Planner</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="/index.html" aria-label="Weekly Planner home">
+    <span class="brand-mark" aria-hidden="true">W</span>
+    <span>Weekly Planner</span>
+  </a>
+
+  <nav class="main-nav" aria-label="Main navigation">
+    <a class="nav-link" href="../index.html" data-page="home">Timetable</a>
+    <a class="nav-link" href="campus-map.html" data-page="campus">Campus</a>
+    <a class="nav-link" href="mensa-planner.html" data-page="mensa">Mensa</a>
+  </nav>
+</header>
+
+
+  <main class="page-shell">
+    <section class="page-heading">
+      <div>
+        <p class="eyebrow">FIND YOUR WAY AROUND KIT</p>
+        <h1>Campus map</h1>
+      </div>
+    </section>
+
+    <div id="map"></div>
+    <script src="../js/leaflet-loader.js"></script>
+    <script src="../js/map.js"></script>
+    
+  </main>
+</body>
+</html>
