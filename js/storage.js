@@ -20,25 +20,25 @@ export function saveEvents(events) {
   }
 }
 
-const MENSA_SEAT_KEY = "weekly-planner-mensa-seat-v1";
+const MENSA_TABLE_KEY = "weekly-planner-mensa-table-v1";
 
-/** Read the saved Mensa seat ({ area, table, seat }) or null. */
-export function loadMensaSeat() {
+/** Read the saved Mensa table ({ area, table }) or null. */
+export function loadMensaTable() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(MENSA_SEAT_KEY) || "null");
-    return parsed && typeof parsed.area === "string" && typeof parsed.table === "string" && Number.isInteger(parsed.seat)
-      ? parsed
+    const parsed = JSON.parse(localStorage.getItem(MENSA_TABLE_KEY) || "null");
+    return parsed && typeof parsed.area === "string" && typeof parsed.table === "string"
+      ? { area: parsed.area, table: parsed.table }
       : null;
   } catch {
     return null;
   }
 }
 
-/** Persist the chosen seat; pass null to clear it. */
-export function saveMensaSeat(seat) {
+/** Persist the chosen table; pass null to clear it. */
+export function saveMensaTable(table) {
   try {
-    if (seat) localStorage.setItem(MENSA_SEAT_KEY, JSON.stringify(seat));
-    else localStorage.removeItem(MENSA_SEAT_KEY);
+    if (table) localStorage.setItem(MENSA_TABLE_KEY, JSON.stringify(table));
+    else localStorage.removeItem(MENSA_TABLE_KEY);
     return true;
   } catch {
     return false;

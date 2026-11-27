@@ -21,19 +21,22 @@
 .mensa-pin circle { fill: var(--accent); stroke: #fff; stroke-width: 3; }
 .mensa-pin text { fill: #fff; font-size: 16px; font-weight: 800; }
 
-/* Seat plan */
+/* Floor plan */
 .mensa-wall { stroke: var(--ink); stroke-width: 2; }
 .mensa-block { fill: #ebeef0; stroke: var(--ink); stroke-width: 2; }
 .mensa-block-label { fill: var(--ink); font-size: 15px; }
 .mensa-block-label.is-big { font-size: 24px; }
-.mensa-table-body { fill: #fbe9bd; stroke: var(--ink); stroke-width: 1.5; }
+.mensa-table { cursor: pointer; outline: none; }
+.mensa-table-body { fill: #fbe9bd; stroke: var(--ink); stroke-width: 1.5; transition: fill .12s; }
 .mensa-table-label { font-size: 17px; font-weight: 800; pointer-events: none; }
-.mensa-seat { fill: #f2c94c; stroke: var(--ink); stroke-width: 1; cursor: pointer; outline: none; transition: fill .12s; }
-.mensa-seat:hover, .mensa-seat:focus-visible { fill: #ffd75e; stroke-width: 2.2; }
-.mensa-seat:focus-visible { stroke: var(--accent); }
-.mensa-seat.is-selected { fill: var(--accent); stroke: var(--accent-dark); }
-.mensa-seat.is-occupied { fill: #c9ced3; cursor: not-allowed; }
-.mensa-empty { padding: 56px 16px; text-align: center; color: var(--muted); }
+.mensa-table:hover .mensa-table-body,
+.mensa-table:focus-visible .mensa-table-body { fill: #ffe9a8; stroke-width: 2.5; }
+.mensa-table:focus-visible .mensa-table-body { stroke: var(--accent); }
+.mensa-table.is-selected .mensa-table-body { fill: var(--accent); stroke: var(--accent-dark); }
+.mensa-table.is-selected .mensa-table-label { fill: #fff !important; }
+.mensa-table.is-selected .mensa-table.is-occupied { cursor: not-allowed; }
+.mensa-table.is-occupied .mensa-table-body { fill: #e3e6e9; }
+.mensa-table.is-occupied .mensa-empty { padding: 56px 16px; text-align: center; color: var(--muted); }
 
 /* Toolbar */
 .mensa-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -42,9 +45,9 @@
 .mensa-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 .mensa-actions p { margin: 0; color: var(--muted); font-size: 12px; }
 .button:disabled { opacity: .45; cursor: not-allowed; }
-.legend-swatch.seat-free { background: #f2c94c; border: 1px solid var(--ink); }
-.legend-swatch.seat-selected { background: var(--accent); }
-.legend-swatch.seat-occupied { background: #c9ced3; }
+.legend-swatch.table-free { background: #fbe9bd; border: 1px solid var(--ink); }
+.legend-swatch.table-selected { background: var(--accent); }
+.legend-swatch.table-occupied { background: #e3e6e9; border: 1px solid #c9ced3; }
 .legend-swatch.map-area { background: #ff8a4c; }
 
 .mensa-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

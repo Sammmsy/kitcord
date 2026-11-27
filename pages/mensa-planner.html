@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Pick your seat in the KIT Mensa.">
+  <meta name="description" content="Pick your table in the KIT Mensa.">
   <title>Mensa | Weekly Planner</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="../css/mensa-planner.css">
@@ -28,7 +28,7 @@
         <div>
           <p class="eyebrow">FIND YOUR FRIENDS IN THE MENSA</p>
           <h1>Mensa</h1>
-          <p class="intro">Select an area to open its seat plan.</p>
+          <p class="intro">Select an area to open its floor plan.</p>
         </div>
         <div class="heading-note"><span class="status-dot"></span> Click an area</div>
       </div>
@@ -41,18 +41,18 @@
     <section id="mensa-room" hidden>
       <div class="page-heading">
         <div>
-          <p class="eyebrow">SEAT PLAN</p>
+          <p class="eyebrow">FLOOR PLAN</p>
           <h1 id="mensa-room-title">Room</h1>
-          <p class="intro">Select a seat. Select it again to clear it.</p>
+          <p class="intro">Select a table. Select it again to clear it.</p>
         </div>
         <button id="mensa-back" class="button button-secondary" type="button">← Back to overview</button>
       </div>
-      <section class="planner-card mensa-card" aria-label="Seat plan">
+      <section class="planner-card mensa-card" aria-label="Floor plan">
         <div class="mensa-toolbar">
           <div class="legend">
-            <span><i class="legend-swatch seat-free"></i> Free</span>
-            <span><i class="legend-swatch seat-selected"></i> Your seat</span>
-            <span><i class="legend-swatch seat-occupied"></i> Occupied</span>
+            <span><i class="legend-swatch table-free"></i> Free</span>
+            <span><i class="legend-swatch table-selected"></i> Your table</span>
+            <span><i class="legend-swatch table-occupied"></i> Occupied</span>
           </div>
           <div class="mensa-controls">
             <div class="mensa-zoom" role="group" aria-label="Zoom">
@@ -65,8 +65,8 @@
         </div>
         <div class="mensa-stage"><div id="mensa-plan"></div></div>
         <div class="mensa-actions">
-          <p>Your seat is saved in this browser on this device.</p>
-          <button id="mensa-clear" class="button button-secondary" type="button">Clear seat</button>
+          <p>Your table is saved in this browser on this device.</p>
+          <button id="mensa-clear" class="button button-secondary" type="button">Clear table</button>
         </div>
       </section>
     </section>

@@ -1,12 +1,11 @@
-import { loadMensaSeat, saveMensaSeat } from "./storage.js";
+import { loadMensaTable, saveMensaTable } from "./storage.js";
 import { AREAS, MAP_SIZE, OCCUPIED } from "./mensa-config.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const MIN_SCALE = 1.3;   // on narrow screens a plan unit is at least this many px (seats stay tappable)
+const MIN_SCALE = 1.3;   // on narrow screens a plan unit is at least this many px (tables stay tappable)
 const MAX_SCALE = 4;     // zoom limit
 const WIDE_STAGE = 700;  // from this stage width on, the plan simply fits the screen
 const ZOOM_STEP = 1.25;
-const SEAT = 11; // default seat square size in SVG units (layouts may override via seatSize)
 
 const overviewView = document.querySelector("#mensa-overview");
 const roomView = document.querySelector("#mensa-room");
@@ -24,7 +23,7 @@ const zoomFit = document.querySelector("#mensa-zoom-fit");
 const toast = document.querySelector("#toast");
 
 const occupied = new Set(OCCUPIED);
-let selection = loadMensaSeat(); // { area, table, seat } | null
+let selection = loadMensaTable(); // { area, table } | null
 let activeArea = null;
 let toastTimer;
 
@@ -58,13 +57,13 @@ function notify(message) {
   toastTimer = setTimeout(() => toast.classList.remove("visible"), 2400);
 }
 
-const seatKey = (areaId, tableId, seat) => `${areaId}:${tableId}-${seat}`;
+const tableKey = (areaId, tableId) => `${areaId}:${tableId}`;
 const areaById = id => AREAS.find(area => area.id === id);
 
 function describeSelection() {
   if (!selection) return "";
   const area = areaById(selection.area);
-  return `${area ? area.name : selection.area} · Table ${selection.table} · Seat ${selection.seat}`;
+  return `${area ? area.name : selection.area} · Table ${selection.table}`;
 }
 
 /* ---------- overview map ---------- */
@@ -98,46 +97,11 @@ function renderMap() {
       check.textContent = "✓";
     }
 
-    makeActivatable(g, hasPlan ? `Open seat plan: ${area.name}` : `${area.name} (no seat plan yet)`, () => openArea(area));
+    makeActivatable(g, hasPlan ? `Open floor plan: ${area.name}` : `${area.name} (no floor plan yet)`, () => openArea(area));
   }
 }
 
-/* ---------- seat plan ---------- */
-
-/** Returns [{ x, y, angle? }] for every seat of a table (angle only for round tables). */
-function seatPositions(table, size) {
-  const overlap = Math.round(size * 0.36); // how far a seat tucks under the table edge
-  const positions = [];
-
-  if (table.shape === "round") {
-    const ring = table.r + size / 2 - overlap;
-    for (let i = 0; i < table.seats; i++) {
-      const angle = -90 + (360 / table.seats) * i; // seat 1 at the top, clockwise
-      const rad = (angle * Math.PI) / 180;
-      positions.push({
-        x: table.cx + ring * Math.cos(rad) - size / 2,
-        y: table.cy + ring * Math.sin(rad) - size / 2,
-        angle: angle + 90,
-      });
-    }
-    return positions;
-  }
-
-  const n = table.seats;
-  const span = table.orient === "h" ? table.w : table.h;
-  const gap = (span - n * size) / (n + 1);
-  for (let side = 0; side < 2; side++) {
-    for (let i = 0; i < n; i++) {
-      const along = gap * (i + 1) + size * i;
-      if (table.orient === "h") {
-        positions.push({ x: table.x + along, y: side === 0 ? table.y - size + overlap : table.y + table.h - overlap });
-      } else {
-        positions.push({ x: side === 0 ? table.x - size + overlap : table.x + table.w - overlap, y: table.y + along });
-      }
-    }
-  }
-  return positions;
-}
+/* ---------- floor plan ---------- */
 
 function renderPlan(area) {
   const layout = area.layout;
@@ -146,7 +110,7 @@ function renderPlan(area) {
   if (!layout) {
     const empty = document.createElement("p");
     empty.className = "mensa-empty";
-    empty.textContent = `There is no seat plan for ${area.name} yet.`;
+    empty.textContent = `There is no floor plan for ${area.name} yet.`;
     planHost.append(empty);
     return;
   }
@@ -155,7 +119,7 @@ function renderPlan(area) {
     viewBox: `0 0 ${layout.width} ${layout.height}`,
     class: "mensa-svg mensa-svg-room",
     role: "group",
-    "aria-label": `Seat plan ${area.name}`,
+    "aria-label": `Floor plan ${area.name}`,
   }, planHost);
 
   for (const [x1, y1, x2, y2] of layout.walls) {
@@ -180,8 +144,10 @@ function renderPlan(area) {
   }
 
   for (const table of layout.tables) {
-    const g = svg("g", { class: "mensa-table" }, root);
+    const key = tableKey(area.id, table.id);
+    const g = svg("g", { class: "mensa-table", "data-key": key }, root);
     const round = table.shape === "round";
+
     if (round) svg("circle", { cx: table.cx, cy: table.cy, r: table.r, class: "mensa-table-body" }, g);
     else svg("rect", { x: table.x, y: table.y, width: table.w, height: table.h, rx: 2, class: "mensa-table-body" }, g);
     const label = svg("text", {
@@ -191,31 +157,21 @@ function renderPlan(area) {
     label.textContent = table.id;
     if (layout.labelSize) label.style.fontSize = `${layout.labelSize}px`;
 
-    const size = layout.seatSize ?? SEAT;
-    seatPositions(table, size).forEach(({ x, y, angle }, index) => {
-      const number = index + 1;
-      const key = seatKey(area.id, table.id, number);
-      const seat = svg("rect", { x, y, width: size, height: size, rx: 2, class: "mensa-seat", "data-key": key }, g);
-      if (angle !== undefined) seat.setAttribute("transform", `rotate(${angle.toFixed(1)} ${(x + size / 2).toFixed(1)} ${(y + size / 2).toFixed(1)})`);
-      const name = `Table ${table.id}, seat ${number}`;
-
-      if (occupied.has(key)) {
-        seat.classList.add("is-occupied");
-        seat.setAttribute("aria-label", `${name} (occupied)`);
-        seat.setAttribute("aria-disabled", "true");
-      } else {
-        makeActivatable(seat, name, () => toggleSeat(area, table.id, number));
-      }
-    });
+    if (occupied.has(key)) {
+      g.classList.add("is-occupied");
+      g.setAttribute("aria-label", `Table ${table.id} (occupied)`);
+      g.setAttribute("aria-disabled", "true");
+    } else {
+      makeActivatable(g, `Table ${table.id}`, () => toggleTable(area, table.id));
+    }
   }
 
-  syncSeats();
+  syncTables();
 }
 
-function syncSeats() {
-  for (const el of planHost.querySelectorAll(".mensa-seat")) {
-    const selected = Boolean(activeArea && selection &&
-      el.dataset.key === seatKey(selection.area, selection.table, selection.seat));
+function syncTables() {
+  for (const el of planHost.querySelectorAll(".mensa-table")) {
+    const selected = Boolean(selection && el.dataset.key === tableKey(selection.area, selection.table));
     el.classList.toggle("is-selected", selected);
     if (el.getAttribute("role") === "button") el.setAttribute("aria-pressed", String(selected));
   }
@@ -223,18 +179,18 @@ function syncSeats() {
 
 function renderSummary() {
   const text = describeSelection();
-  summary.textContent = text ? `Your seat: ${text}` : "No seat selected";
+  summary.textContent = text ? `Your table: ${text}` : "No table selected";
   clearButton.disabled = !selection;
-  savedNote.textContent = text ? `Saved seat: ${text}` : "Choose an area to find a seat.";
+  savedNote.textContent = text ? `Saved table: ${text}` : "Choose an area to find a table.";
 }
 
-function toggleSeat(area, tableId, number) {
-  const same = selection && selection.area === area.id && selection.table === tableId && selection.seat === number;
-  selection = same ? null : { area: area.id, table: tableId, seat: number };
-  saveMensaSeat(selection);
-  syncSeats();
+function toggleTable(area, tableId) {
+  const same = selection && selection.area === area.id && selection.table === tableId;
+  selection = same ? null : { area: area.id, table: tableId };
+  saveMensaTable(selection);
+  syncTables();
   renderSummary();
-  notify(same ? "Seat cleared" : "Seat saved");
+  notify(same ? "Table cleared" : "Table saved");
 }
 
 /* ---------- responsive sizing & zoom ---------- */
@@ -247,7 +203,7 @@ function stageInnerWidth() {
   return stage.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
 }
 
-/** Width in px that fits the plan on screen (wide) or keeps seats tappable (narrow). */
+/** Width in px that fits the plan on screen (wide) or keeps tables tappable (narrow). */
 function fitWidth(layout) {
   const available = stageInnerWidth();
   const byHeight = window.innerHeight * 0.76 * (layout.width / layout.height);
@@ -305,10 +261,10 @@ backButton.addEventListener("click", showOverview);
 
 clearButton.addEventListener("click", () => {
   selection = null;
-  saveMensaSeat(null);
-  syncSeats();
+  saveMensaTable(null);
+  syncTables();
   renderSummary();
-  notify("Seat cleared");
+  notify("Table cleared");
 });
 
 showOverview();
